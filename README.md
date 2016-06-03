@@ -14,8 +14,8 @@ For overscan image conversions, you may use [ConvImgCpc v0.17](http://www.cpcwik
 
 ## Credits
 
-* Code     : Bruno "Kukulcan", Tom & Jerry / GPA
-* Gfx      : Bruno "Kukulcan", CED
-* Music/fx : Tom & Jerry / GPA
-* Testing  : Ast, BDC Iron, CED, Christophe PETIT, CPCManiaco, Deckard, iXien, Jerres 12, Lone, Maxit, Pacorabanne, Snake Plissken, Tanuki, Xtrabet
-* Date     : September, 2015
+* **Code**     : Bruno "Kukulcan", Tom & Jerry / GPA
+* **Gfx**      : Bruno "Kukulcan", CED
+* **Music/fx** : Tom & Jerry / GPA
+* **Testing**  : Ast, BDC Iron, CED, Christophe PETIT, CPCManiaco, Deckard, iXien, Jerres 12, Lone, Maxit, Pacorabanne, Snake Plissken, Tanuki, Xtrabet
+* **Date**     : September, 2015
