@@ -1,0 +1,1457 @@
+*******************************************************************************
+*** 4TO4K7.BAS -> BASIC 1ko ***
+*******************************
+1 OPENOUT "D":MEMORY &1EF:CLOSEOUT
+2 LOAD"!4TO4K7.PRS":CALL &5770:CALL &A000
+3 MEMORY &8000:RUN"!4TO4K7.LOD
+
+
+
+
+*******************************************************************************
+*** 4TO4K7.PRS -> BINAIRE 22 ko ***
+***********************************
+titlescreen overscan (full screen), 32ko compressed to 22ko
++ ASM RUNTIME for display effect :
+
+ORG #A300
+
+DI
+
+;MODE 1
+LD A,1
+CALL &BC0E
+
+;largeur a zero (masque l'écran)
+LD BC,&BC01
+OUT (C),C
+LD BC,&BD00
+OUT (C),C
+
+;BORDER 11 (Bleu)
+LD BC,&0B0B
+CALL &BC38
+
+;INK 0,0 (Noir)
+XOR A
+LD BC,&0000
+CALL &BC32
+
+;INK 1,11 (Bleu)
+LD A,1
+LD BC,&0B0B
+CALL &BC32
+
+;INK 2,15 (Orange)
+LD A,2
+LD BC,&0F0F
+CALL &BC32
+
+;INK 3,26 (Blanc)
+LD A,3
+LD BC,&1A1A
+CALL &BC32
+
+;chargement du fichier
+LD B,&0C
+LD HL,fichier_overscan
+LD DE,&C000
+CALL &BC77
+;LD HL,&01FE ;normal
+LD HL,&01F0 ;version compressée
+CALL &BC83
+
+CALL &55C6 ;décompression
+
+;correction du soucis de compression avec Zenith 2 (1er octet de mangé)
+LD a,&F0
+LD (&01FE),a
+
+;correction du problème avec convimgcpc (overscan FIN)
+LD A,&F1
+LD (&07FE),a
+LD (&07FF),a
+LD A,&F4
+LD (&0FFE),a
+LD (&0FFF),a
+LD A,&F1
+LD (&17FE),a
+LD (&17FF),a
+LD A,&F4
+LD (&1FFE),a
+LD (&1FFF),a
+LD A,&F1
+LD (&27FE),a
+LD (&27FF),a
+LD A,&F4
+LD (&2FFE),a
+LD (&2FFF),a
+LD A,&F1
+LD (&37FE),a
+LD (&37FF),a
+LD A,&F4
+LD (&3FFE),a
+LD (&3FFF),a
+
+;OUT overscan
+;largeur
+LD BC,&BC01
+OUT (C),C
+LD BC,&BD30
+OUT (C),C
+
+;hauteur
+LD BC,&BC06
+OUT (C),C
+;LD BC,&BD22
+LD BC,&BD00
+OUT (C),C
+
+;decalage horizontal
+LD BC,&BC02
+OUT (C),C
+LD BC,&BD32
+OUT (C),C
+
+;decalage vertical
+LD BC,&BC07
+OUT (C),C
+LD BC,&BD23
+OUT (C),C
+
+;ecran 32 ko (&000 a &7FFF)
+LD BC,&BC0C
+OUT (C),C
+LD BC,&BD0C
+OUT (C),C
+
+;debut offset (en &01FE)
+LD BC,&BC0D
+OUT (C),C
+LD BC,&BDFF
+OUT (C),C
+
+
+;animation sur la hauteur R6 = 0 a 34
+LD BC,&BC06
+OUT (C),C
+LD B,&BD
+
+LD A,34
+LD C,0
+OUT (C),C
+
+.anim2
+INC C
+OUT (C),C
+
+;ralentissement
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+
+DEC A
+CP 0
+JP NZ,anim2
+
+
+;attente de l'appuie d'une touche
+CALL &BB06
+
+
+;animation sur la largeur R1 = 48 a 0
+LD BC,&BC01
+OUT (C),C
+LD B,&BD
+
+LD A,47
+LD C,47
+OUT (C),C
+
+.anim1
+DEC C
+OUT (C),C
+
+;ralentissement
+CALL &BD19
+CALL &BD19
+CALL &BD19
+CALL &BD19
+
+DEC A
+CP 0
+JP NZ,anim1
+
+
+
+;OUT normal
+;largeur
+LD BC,&BC01
+OUT (C),C
+LD BC,&BD28
+OUT (C),C
+
+;hauteur
+LD BC,&BC06
+OUT (C),C
+LD BC,&BD19
+OUT (C),C
+
+;decalage horizontal
+LD BC,&BC02
+OUT (C),C
+LD BC,&BD2E
+OUT (C),C
+
+;decalage vertical
+LD BC,&BC07
+OUT (C),C
+LD BC,&BD1E
+OUT (C),C
+
+;ecran 17 ko (&C00 a &FFFF)
+LD BC,&BC0C
+OUT (C),C
+LD BC,&BD3C
+OUT (C),C
+
+;debut offset (en &C000)
+LD BC,&BC0D
+OUT (C),C
+LD BC,&BD00
+OUT (C),C
+
+;vider la mémoire
+LD HL,&01FE
+LD DE,&01FF
+LD BC,&8000
+LD (HL),0
+LDIR
+
+EI
+
+RET
+
+fichier_overscan :
+;DEFM "OVER1   .SCR" ;normal 32 ko
+DEFM "OVER1   .SCA" ;compressée 22 ko
+
+
+
+*******************************************************************************
+*** 4TO4K7.LOD  -> BASIC 1ko ***
+********************************
+1 'Kukulcan
+10 OPENOUT "D":MEMORY &53FF:CLOSEOUT:LOAD "!4TO4K7.ECR":CALL &6000:RUN"!4TO4K7.PRG
+
+
+
+*******************************************************************************
+*** 4TO4K7.ECR -> BINAIRE 5 Ko ***
+**********************************
+Design by CED compressed (17ko to 5ko).
+
+
+
+*******************************************************************************
+*** 4TO4K7.PRG -> BASIC 10ko ***
+********************************
+1 'Kukulcan
+10 K7=1:CALL &BB4E:POKE &BDEE,&C9:KEY DEF 66,0,0,0,0
+20 opaque$=CHR$(22)+CHR$(0):transp$=CHR$(22)+CHR$(1):DEFINT a,b,g,l,m,s,x,y,z
+30 DIM objetx(8),objety(8),posy(11):RESTORE 40:FOR a=0 TO 10:READ z:posy(a)=z:NEXT:PEN 1
+40 DATA &F0A1,&F141,&F1E1,&F281,&F321,&F3C1,&F461,&F501,&F5A1,&F641,&F6E1
+50 LOAD"!4TO4K7.BIN",&5400:CALL &9FC1
+60 VOL=3:ZIC=INT(RND*3):GOSUB 1810:WINDOW #1,2,32,4,24:level=0:GOSUB 390
+70 EVERY 25,2 GOSUB 1860
+80 '* MENU
+90 GOSUB 1390:GOSUB 1410:b=3:a=3:old=a:GOSUB 1520
+100 IF (INKEY(1)=0 OR JOY(0)=8) THEN GOSUB 450:GOSUB 1690
+110 IF (INKEY(8)=0 OR JOY(0)=4) THEN GOSUB 420:GOSUB 1690
+120 IF (INKEY(0)=0 OR JOY(0)=1) THEN old=a:a=a-1:IF K7=1 AND a=7 THEN a=6:GOSUB 1520 ELSE GOSUB 1520
+130 IF (INKEY(2)=0 OR JOY(0)=2) THEN old=a:a=a+1:IF K7=1 AND a=7 THEN a=8:GOSUB 1520 ELSE GOSUB 1520
+140 IF (INKEY(47)=0 OR JOY(0)=16) THEN ON a-2 GOTO 170,1030,1100,1190,1330,160
+150 GOSUB 1760:GOTO 100
+160 ùCLS3:CALL 0
+170 '* GAME
+180 GOSUB 1750:GOSUB 1810
+190 GOSUB 390:moves=0:GOSUB 360:GOSUB 590:slider=5:ùTILE,&D0E3,&9861+(slider*64):GOSUB 340:GOSUB 690
+200 'test
+210 IF INKEY(50)=0 THEN GOSUB 1610:GOTO 190
+220 IF INKEY(66)=0 THEN GOSUB 1640:GOSUB 1750:GOSUB 1810:GOTO 80
+230 IF (INKEY(47)=0 OR JOY(0)=16) THEN GOSUB 1630:GOSUB 550
+240 IF (INKEY(64)=0 OR INKEY(13)=0) THEN slider=5:GOSUB 1630:GOSUB 510
+250 IF (INKEY(65)=0 OR INKEY(14)=0) THEN slider=6:GOSUB 1630:GOSUB 510
+260 IF (INKEY(57)=0 OR INKEY(5)=0) THEN slider=7:GOSUB 1630:GOSUB 510
+270 IF (INKEY(56)=0 OR INKEY(20)=0) THEN slider=8:GOSUB 1630:GOSUB 510
+280 IF (INKEY(8)=0 OR JOY(0)=4) THEN dx=-1:GOSUB 740
+290 IF (INKEY(1)=0 OR JOY(0)=8) THEN dx=1:GOSUB 740
+300 IF (INKEY(0)=0 OR JOY(0)=1) THEN dy=-1:GOSUB 900
+310 IF (INKEY(2)=0 OR JOY(0)=2) THEN dy=1:GOSUB 900
+320 GOSUB 1760:IF GOOD=4 THEN GOSUB 660:GOTO 1650
+330 GOTO 200
+340 'level
+350 ùSTART,&7600+(level*176):GOSUB 490:GOSUB 720:PEN 1:RETURN
+360 'moves
+370 IF moves>999 THEN moves=999
+380 LOCATE 36,22:PRINT USING "###";moves:RETURN
+390 'num level
+400 LOCATE 9,2:PEN 2:PRINT USING "##";(level+1):IF PEEK(&9FB8)<level THEN POKE &9FB8,level
+410 RETURN
+420 'level-1
+430 level=level-1:IF level<0 THEN level=0
+440 GOSUB 480:RETURN
+450 'level+1
+460 x=PEEK(&9FB8):level=level+1:IF level>x THEN level=x
+470 GOSUB 480:RETURN
+480 LOCATE 22,10:PEN 2:PRINT USING "##";(level+1):RETURN
+490 'coord
+500 b=1:FOR i=&9FB9 TO &9FC0:a=176-PEEK(i):y=aç 16:x=a-(y*16):objetx(b)=x:objety(b)=y:b=b+1:NEXT:RETURN
+510 'slider courant
+520 ùBLABLA:ùTILE,&D0E3,&9861+(slider*64):a=1:GOSUB 540:a=2:GOSUB 540:a=3:GOSUB 540:a=0:GOSUB 540:RETURN
+530 'entoure le slider
+540 PLOT 8+(objetx(slider)*32),354-(objety(slider)*32),a:DRAWR 30,0,a:DRAWR 0,-30,a:DRAWR -30,0,a:DRAWR 0,30,a:FOR b=0 TO 2:CALL &BD19:NEXT:RETURN
+550 'next slider
+560 slider=slider+1:IF slider >8 THEN slider=5
+570 GOSUB 510:CALL &BB03
+580 IF (INKEY(47)=-1 AND INKEY(76)=-1) THEN RETURN ELSE GOTO 580
+590 'read
+600 recadr=&9F53+(level*2):best=(PEEK(recadr)*100)+PEEK(recadr+1):IF best=0 THEN best=999
+610 LOCATE 21,2:PEN 2:PRINT USING "###";best:RETURN
+620 'save
+630 ùBLABLA:LOCATE #1,2,21:PRINT #1,"3Save in progress1":SAVE "INGAME.SAV",b,&9F53,&66:GOSUB 1680:LOCATE #1,2,21:PRINT #1,SPACE$(16):ùBLABLA:GOTO 1350
+640 'del
+650 ùBLABLA:LOCATE #1,2,21:PRINT #1,"3Scores deleted1":GOSUB 1680:FOR recadr=&9F53 TO &9FB8:POKE recadr,0:NEXT:GOSUB 1680:LOCATE #1,2,21:PRINT #1,SPACE$(14):GOTO 620
+660 'record?
+670 recadr=&9F53+(level*2):IF moves>=best THEN RETURN
+680 a=movesç 100:b=moves-(a*100):POKE recadr,a:POKE recadr+1,b:RETURN
+690 'nb good
+700 good=0:FOR i=1 TO 4:IF objetx(i)=objetx(i+4) AND objety(i)=objety(i+4) THEN good=good+1
+710 NEXT:LOCATE 37,17:PEN 1:PRINT USING "#";good:RETURN
+720 'save fonds+display sliders
+730 FOR a=5 TO 8:recadr=posy(objety(a))+(objetx(a)*4):ùDECORSAVE,a,recadr:ùTILE,recadr,&9861+(a*64):ùSPRITE,&9861+(a*64),recadr:NEXT:RETURN
+740 'move H
+750 a=0:WHILE dx<>0:GOSUB 770:WEND:IF a=1 THEN moves=moves+1:GOSUB 360:GOSUB 690 ELSE GOSUB 1620
+760 ùBLABLA:RETURN
+770 x=objetx(slider):y=objety(slider)
+780 IF x>=15 AND dx=1 THEN dx=0:RETURN
+790 IF x<=0 AND dx=-1 THEN dx=0:RETURN
+800 suivant=PEEK(&9EA2+(y*16)+x+dx)
+810 IF suivant >= 9 THEN dx=0:RETURN:'mur
+820 IF objetx(5)=x+dx AND objety(5)=y THEN dx=0:RETURN
+830 IF objetx(6)=x+dx AND objety(6)=y THEN dx=0:RETURN
+840 IF objetx(7)=x+dx AND objety(7)=y THEN dx=0:RETURN
+850 IF objetx(8)=x+dx AND objety(8)=y THEN dx=0:RETURN
+860 'restaurer le decor
+870 recadr=posy(y)+(x*4):ùDECORAFF,slider,recadr
+880 'new position
+890 x=x+dx:objetx(slider)=x:recadr=recadr+(dx*4):ùDECORSAVE,slider,recadr:CALL &BD19:ùSPRITE,&9861+(slider*64),recadr:a=1:RETURN
+900 'move V
+910 a=0:WHILE dy<>0:GOSUB 930:WEND:IF a=1 THEN moves=moves+1:GOSUB 360:GOSUB 690 ELSE GOSUB 1620
+920 ùBLABLA:RETURN
+930 x=objetx(slider):y=objety(slider)
+940 IF y>=10 AND dy=1 THEN dy=0:RETURN
+950 IF y<=0 AND dy=-1 THEN dy=0:RETURN
+960 suivant=PEEK(&9EA2+((y+dy)*16)+x)
+970 IF suivant >= 9 THEN dy=0:RETURN:'mur
+980 IF objetx(5)=x AND objety(5)=y+dy THEN dy=0:RETURN
+990 IF objetx(6)=x AND objety(6)=y+dy THEN dy=0:RETURN
+1000 IF objetx(7)=x AND objety(7)=y+dy THEN dy=0:RETURN
+1010 IF objetx(8)=x AND objety(8)=y+dy THEN dy=0:RETURN
+1020 recadr=posy(y)+(x*4):ùDECORAFF,slider,recadr:y=y+dy:objety(slider)=y:recadr=posy(y)+(x*4):ùDECORSAVE,slider,recadr:CALL &BD19:ùSPRITE,&9861+(slider*64),recadr:a=1:RETURN
+1030 '* THE STORY
+1040 GOSUB 1560:a$="T H E  S T O R Y":GOSUB 1460
+1050 PEN #1,1:LOCATE #1,1,6:PRINT #1,"Marty McFly has a strange dreamin which Master Yoda challengeshim to meet Wonder Woman.     "
+1060 PEN #1,3:PRINT #1,"Marty feels confused about it, but he accepts the challenge.  For that, he will be monitored by the android C-3PO throught  the 50 puzzle levels to solve."
+1070 PEN #1,1:PRINT #1,"The challenge is quite simple: for each level, help Marty to  get four sliders back to their respective target location."
+1080 PEN #1,3:PRINT #1,"Your slider once in motion willstop when he meets a wall, the edge of the playing area or    another slider."
+1090 CALL &BB03:GOSUB 1710:GOTO 80
+1100 '* CONTROLS
+1110 GOSUB 1560:a$="C O N T R O L S":GOSUB 1460
+1120 a=1:b=3:GOSUB 1840:PEN #1,1:LOCATE #1,3,7:PRINT #1,"FIRE, SPACEBAR, 1, 2, 3 or 4":PEN #1,3:LOCATE #1,3,9:PRINT #1,"Select a slider"
+1130 a=2:b=5:GOSUB 1840:PEN #1,1:LOCATE #1,3,11:PRINT #1,"JOYSTICK or ARROWS KEYS":PEN #1,3:LOCATE #1,3,13:PRINT #1,"Move the selected slider"
+1140 a=3:b=7:GOSUB 1840:PEN #1,1:LOCATE #1,3,15:PRINT #1,"ESCAPE":PEN #1,3:LOCATE #1,12,15:PRINT #1,"Abort the game"
+1150 a=4:b=8:GOSUB 1840:PEN #1,1:LOCATE #1,3,17:PRINT #1,"R":PEN #1,3:LOCATE #1,12,17:PRINT #1,"Restart the level"
+1160 a=1:b=9:GOSUB 1840:PEN #1,1:LOCATE #1,3,19:PRINT #1,"I":PEN #1,3:LOCATE #1,12,19:PRINT #1,"Next music"
+1170 a=2:b=10:GOSUB 1840:PEN #1,1:LOCATE #1,3,21:PRINT #1,"O or P":PEN #1,3:LOCATE #1,12,21:PRINT #1,"Music volume - or +"
+1180 CALL &BB03:GOSUB 1710:GOTO 80
+1190 '* CREDITS
+1200 GOSUB 1560:a$="C R E D I T S":GOSUB 1460
+1210 a=1:b=2:GOSUB 1840
+1220 LOCATE #1,3,5:PRINT #1,"2CODE1";SPACE$(7);"Kukulcan":LOCATE #1,14,6:PEN #1,3:PRINT #1,"Tom & Jerry/GPA"
+1230 a=2:b=4:GOSUB 1840
+1240 LOCATE #1,3,13:PRINT #1,"2MUSIC/FX1":LOCATE #1,14,13:PEN #1,1:PRINT #1,"Tom & Jerry/GPA"
+1250 a=3:b=6:GOSUB 1840
+1260 LOCATE #1,3,9:PRINT #1,"2GFX1";SPACE$(8);"Kukulcan":LOCATE #1,14,10:PEN #1,3:PRINT #1,"CED"
+1270 a=4:b=8:GOSUB 1840
+1280 LOCATE #1,3,17:PRINT #1,"2TESTERS1":LOCATE #1,14,17:PRINT #1,"Maxit ";:PEN #1,3:PRINT #1,"JERRES 12"
+1290 LOCATE #1,14,18:PEN #1,1:PRINT #1,"AST ";:PEN #1,3:PRINT #1,"CED ";:PEN #1,1:PRINT #1,"BDCIron"
+1300 LOCATE #1,2,19:PRINT #1,"3CPCManiaco  1Xtrabet ";:PEN #1,3:PRINT #1,"Deckard"
+1310 LOCATE #1,2,20:PRINT #1,"1Snake PLISSKEN 3Tanuki ";:PEN #1,1:PRINT #1,"iXien":LOCATE #1,2,21:PEN #1,3:PRINT #1,"Christophe PETIT ";:PEN #1,1:PRINT #1," LONE";:PEN #1,3:PRINT #1," PACO"
+1320 CALL &BB03:GOSUB 1710:GOTO 80
+1330 '* SCORES
+1340 GOSUB 1560:a$="S C O R E S":GOSUB 1460:b=4:a=3:old=a:GOSUB 1480:LOCATE #1,11,7:PRINT #1,"SAVE SCORE":LOCATE #1,11,11:PRINT #1,"CLEAR SCORE":LOCATE #1,11,15:PRINT #1,"MAIN MENU"
+1350 IF (INKEY(0)=0 OR JOY(0)=1) THEN old=a:a=a-2:GOSUB 1480
+1360 IF (INKEY(2)=0 OR JOY(0)=2) THEN old=a:a=a+2:GOSUB 1480
+1370 IF (INKEY(47)=0 OR JOY(0)=16) THEN ON aç 2 GOTO 620,640,80
+1380 GOTO 1350
+1390 'del area txt
+1400 LOCATE 9,2:PRINT "  ":LOCATE 21,2:PRINT "   ":LOCATE 37,17:PRINT " ":LOCATE 36,22:PRINT "   ":ùTILE,&D0E3,&9861:GOSUB 1560:RETURN
+1410 'aff menu
+1420 PEN #1,1:LOCATE #1,9,7:PRINT #1,"PLAY LEVEL ";CHR$(246);"  ";CHR$(247):GOSUB 480:LOCATE #1,9,9:PRINT #1,"THE STORY":LOCATE #1,9,11:PRINT #1,"CONTROLS":LOCATE #1,9,13:PRINT #1,"CREDITS"
+1430 IF K7=0 THEN LOCATE #1,9,15:PRINT #1,"SCORES 2(save)1"
+1440 LOCATE #1,9,17:PRINT #1,"RETURN TO BASIC":PEN #1,2:LOCATE #1,6,21:PRINT #1,"2015 ";CHR$(164);" CPC-POWER.COM":a$="M E N U":GOSUB 1460
+1450 ùTILE,posy(10)+(2*4)-2,&9861+(1*64):ùTILE,posy(10)+(13*4),&9861+(4*64):ùTILE,posy(10)+(1*4)-2,&9861+(5*64):ùTILE,posy(10)+(14*4),&9861+(8*64):RETURN
+1460 'cart
+1470 b=LEN(a$):c=(16-b)ç 2:a$=STRING$(c," ")+a$+STRING$(c," "):ùCART:PEN #1,2:LOCATE #1,8,3:PRINT #1,"";a$;"":PEN #1,1:LOCATE #1,8,2:PRINT #1,a$:RETURN
+1480 'choix gestion score
+1490 IF a>7 THEN a=3
+1500 IF a<3 THEN a=7
+1510 ùTILE,posy(old)+(b*4),&9861:ùSPRITE,&9861+(3*64),posy(a)+(b*4)-&1000:GOSUB 1680:RETURN
+1520 'choix menu
+1530 IF a>8 THEN a=3
+1540 IF a<3 THEN a=8
+1550 ùTILE,posy(old)+(b*4),&9861:ùSPRITE,&9861+(3*64),posy(a)+(b*4)-&1000:GOSUB 1680:RETURN
+1560 'clear level
+1570 ùLEVELCLEAR:ùLEVEL:RETURN
+1580 'rect info
+1590 ùRECT:LOCATE 12,13:PEN 1:PRINT transp$;a$;opaque$:RETURN
+1600 '* BRUITAGES
+1610 ùBLABLA:a$="  RELOAD  ":GOSUB 1580:OUT &BC00,2:FOR a=46 TO 62 STEP 2:OUT &BD00,a:CALL &BD19:NEXT:FOR a=0 TO 46 STEP 2:OUT &BD00,a:CALL &BD19:NEXT:GOSUB 1700:ùBLABLA:RETURN
+1620 LOCATE 1,1:PRINT CHR$(7):RETURN:'move impossible
+1630 LOCATE 1,1:PRINT CHR$(7):RETURN:'swap slider
+1640 OUT &BC00,8:OUT &BD00,1:ùBLABLA:a$="ABORT GAME":GOSUB 1580:GOSUB 1700:ùBLABLA:OUT &BC00,8:OUT &BD00,0:RETURN
+1650 ùBLABLA:a$="WELL DONE!":GOSUB 1580:FOR a=0 TO 15:FOR b=60 TO 90 STEP 2:OUT &7F00,b:NEXT:NEXT:level=level+1
+1660 IF level=50 THEN level=0:ZIC=3:VOL=0:GOSUB 1830:a$="GOOD JOB !":GOSUB 1580:FOR i=1 TO 19:FOR j=20 TO 1 STEP-2:OUT &BC00,5:OUT &BD00,j:NEXT:NEXT:OUT &BD00,0:FOR i=0 TO 50:FOR j=60 TO 90:OUT &7F00,1:OUT &7F00,j:NEXT:NEXT:CALL &BB03:CALL &BB06:GOTO 80
+1670 CALL &BB03:GOSUB 1700:ùBLABLA:GOSUB 1700:a$="NEXT LEVEL":GOSUB 1580:GOSUB 1700:ùBLABLA:GOTO 190
+1680 'tempo
+1690 FOR y=1 TO 8:CALL &BD19:NEXT:RETURN
+1700 FOR y=1 TO 40:CALL &BD19:NEXT:RETURN
+1710 'C-3PO bouche
+1720 z=0:cpt=0:WHILE z=0:a$=INKEY$:IF a$<>"" THEN z=1 ELSE cpt=cpt+1
+1730 IF cpt=50 THEN cpt=0:ùBLABLA
+1740 WEND:RETURN
+1750 FOR I=VOL TO 15:FOR J=1 TO 7:CALL &BD19:NEXT:CALL &5509,I:NEXT:CALL &5503:CALL &5509,0:RETURN:'zic off
+1760 'volume
+1770 IF INKEY(27)=0 THEN IF VOL>0 THEN VOL=VOL-1:CALL &5509,VOL
+1780 IF INKEY(34)=0 THEN IF VOL<11 THEN VOL=VOL+1:CALL &5509,VOL
+1790 IF INKEY(35)=0 THEN GOSUB 1810
+1800 RETURN
+1810 'zic
+1820 ZIC=ZIC+1:IF ZIC>3 THEN ZIC=0
+1830 CALL &5500,ZIC:CALL &5509,VOL:RETURN
+1840 'sprite prs
+1850 ùSPRITE,&9861+(a*64),posy(b)-&1000:RETURN
+1860 'vumetre
+1870 CALL &5400:RETURN
+
+
+
+*******************************************************************************
+*** 4TO4K7.BIN -> BINAIRE 21ko ***
+**********************************
+Assemble in one file, all the binary ressource (vumetre, music, 50 levels, tiles, score, rsx)
+10 MEMORY &53FF:CLOSEOUT
+20 LOAD"!ingame.vum",&5400:LOAD"!linked.mus",&5500:LOAD"!normal.lvl",&7600:LOAD"!editor.spr",&9861:LOAD"!ingame.sav",&9F53:LOAD"!ingame.rsx",&9FC1
+25 POKE &9FB8,0:'lock levels access
+30 SAVE"4TO4K7.BIN",b,&5400,&5142
+
+*** VUMETRE
+ORG &5400
+
+DI
+;position courante x,y
+CALL &BBC6
+push de
+push hl
+
+CALL lirelescanaux
+CALL afficheVUMETRE
+
+;restaurer la position courante
+;(évite le bug avec le rectangle qui entoure le slider)
+pop hl
+pop de
+CALL &BBC0
+
+EI
+RET
+
+.blockevenement
+ds 10
+
+;stocker les valeurs des 3 canaux (A, B, C)
+.valuecanaux
+ds 3
+
+.lirelescanaux
+            LD B,&03
+            LD HL,valuecanaux
+.LIRECANAUX 
+            PUSH BC
+            LD A,B
+            ADD &07
+            LD C,A
+            LD B,&74
+            OUT (C),C
+            LD B,&76
+            IN A,(C)
+            OR &C0
+            OUT (C),A
+            AND &30
+            OUT (C),A
+            LD BC,&F792
+            OUT (C),C
+            LD C,A
+            PUSH BC
+            DEC B
+            OR &40
+            OUT (C),A
+            IN A,(&F4)
+            AND &0F
+            LD (HL),A
+            POP BC
+            LD A,&82
+            OUT (C),A
+            DEC B
+            OUT (C),C
+            INC HL
+            POP BC
+            DJNZ LIRECANAUX 
+RET
+
+
+.afficheVUMETRE
+;***********************
+;*** affiche CANAL A ***
+;***********************
+;barre 1 - effacer
+LD A,2
+CALL &BBDE    ;pen 2
+
+LD DE,476     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,2 
+
+LD DE,0       ;x
+LD HL,30      ;y
+CALL &BBF9    ;drawr x,y,2
+
+;barre 1 - afficher
+LD A,1
+CALL &BBDE    ;pen 1
+
+LD DE,476     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,1
+
+LD A,(valuecanaux) ;la valeur de notre canal (&00 a &0F)
+ADD A,A       ;A*2
+LD DE,0       ;x
+LD HL,0       ;y
+LD L,A        ;y=a
+CALL &BBF9    ;drawr x,VOL*2,1
+
+
+;***********************
+;*** affiche CANAL B ***
+;***********************
+;barre 1 - effacer
+LD A,2
+CALL &BBDE    ;pen 2
+
+LD DE,476+12     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,2 
+
+LD DE,0       ;x
+LD HL,30      ;y
+CALL &BBF9    ;drawr x,y,2
+
+;barre 1 - afficher
+LD A,1
+CALL &BBDE    ;pen 1
+
+LD DE,476+12     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,1
+
+LD A,(valuecanaux+1) ;la valeur de notre canal (&00 a &0F)
+ADD A,A       ;A*2
+LD DE,0       ;x
+LD HL,0       ;y
+LD L,A        ;y=a
+CALL &BBF9    ;drawr x,VOL*2,1
+
+
+;***********************
+;*** affiche CANAL C ***
+;***********************
+;barre 1 - effacer
+LD A,2
+CALL &BBDE    ;pen 2
+
+LD DE,476+24     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,2 
+
+LD DE,0       ;x
+LD HL,30      ;y
+CALL &BBF9    ;drawr x,y,2
+
+;barre 1 - afficher
+LD A,1
+CALL &BBDE    ;pen 1
+
+LD DE,476+24     ;x
+LD HL,364     ;y
+CALL &BBEA    ;plot x,y,1
+
+LD A,(valuecanaux+2) ;la valeur de notre canal (&00 a &0F)
+ADD A,A       ;A*2
+LD DE,0       ;x
+LD HL,0       ;y
+LD L,A        ;y=a
+CALL &BBF9    ;drawr x,VOL*2,1
+
+RET
+
+*** MUSIC by Tom & Jerry ***
+&5500
+
+*** 50 LEVELS ***
+&7500
+
+*** TILES ***
+&9861
+
+*** SCORES ***
+&9F53
+
+*** RSX ***
+ORG &9FC1
+;WRITE "INGAME.RSX"
+
+Hauteur_du_tile  EQU 16
+
+longueur_tableau EQU 16
+hauteur_tableau  EQU 11
+ecran_tableau    EQU &F0A1
+gfx_des_tiles    EQU &9861
+
+niveau_courant   EQU &9EA2
+
+;9FB8 = level le plus haut fini
+
+resultat_target1 EQU &9FB9
+resultat_target2 EQU &9FBA
+resultat_target3 EQU &9FBB
+resultat_target4 EQU &9FBC
+
+resultat_slider1 EQU &9FBD
+resultat_slider2 EQU &9FBE
+resultat_slider3 EQU &9FBF
+resultat_slider4 EQU &9FC0
+
+
+; ****************************
+; *** RSX - INITIALISATION ***
+; ****************************
+.RSX_Init :
+	LD	HL,RSX_Init
+	LD	(HL),&C9            ; Ecrire un RET pour empêcher une nouvelle initialisation
+	LD	BC,RSX_Commandes    ; BC pointe sur la table des Commandes RSX
+	LD	HL,RSX_Tampon       ; HL pointe sur 4 octets libres.
+	JP	&BCD1
+
+.RSX_Tampon :
+	DEFS	4                   ; Tampon de quatre octets.
+
+.RSX_Commandes :
+	DEFW	RSX_Mots_Clefs      ; Adresse des mots clefs
+	JP	TILES_AFF
+	JP      LEVEL_AFF
+	JP      START_AFF
+	JP      RESET_SAV
+	JP      DECOR_SAV
+	JP      DECOR_AFF
+	JP      SPRITE_AFF
+	JP      LEVEL_CLEAR
+	JP      CART_PRS
+	JP      CART_INFO
+	JP      RECT_INFO
+	JP      BOUCHES
+	JP      CLS3
+
+
+.RSX_Mots_Clefs
+	DEFB	   "TIL","E"+&80    ; Mot clef avec le bit 7 du dernier caractere a 1.
+	DEFB       "LEVE","L"+&80
+	DEFB       "STAR","T"+&80
+	DEFB       "RESETDAT","A"+&80
+	DEFB       "DECORSAV","E"+&80
+	DEFB       "DECORAF","F"+&80
+        DEFB       "SPRIT","E"+&80
+        DEFB       "LEVELCLEA","R"+&80
+        DEFB       "CAR","T"+&80
+        DEFB       "INF","O"+&80
+        DEFB       "REC","T"+&80
+        DEFB       "BLABL","A"+&80
+        DEFB       "CLS","3"+&80
+	DEFB       0                ; Fin de la table.
+
+; *********************
+; *** LES FONCTIONS ***
+; *********************
+;syntax |TILE,adresse_ecran,adresse_tiles
+.TILES_AFF
+        ;lecture valeur adresse_tiles
+	LD L,(IX+00)
+	LD H,(IX+01)
+	;lecture valeur adresse_ecran
+	LD E,(IX+02)
+	LD D,(IX+03)
+.TILES_1
+        LD A,Hauteur_du_tile
+.TILES_2
+        LDI         ;16 pixels = 4 octets en MODE 1
+        LDI
+        LDI
+        LDI
+        EX DE,HL
+        LD BC,&07FC
+        ADD HL,BC
+        JR NC,TILES_3
+        LD BC,&C050
+        ADD HL,BC
+.TILES_3
+        EX DE,HL
+        DEC A
+        JR NZ,TILES_2
+        RET
+
+;syntax |LEVEL
+.LEVEL_AFF
+        ;adresse_niveau
+	LD IX,niveau_courant
+
+	LD DE,ecran_tableau
+	LD A,hauteur_tableau
+
+.aff_tableau3
+	PUSH AF
+	PUSH DE 	    ; on sauvegarde l'adresse video de la premiere ligne de sprites a afficher
+	LD A,longueur_tableau
+
+.aff_tableau2
+	PUSH AF
+
+	LD A,(IX+&00)
+	INC IX
+
+	LD L,A
+	LD H,0
+	ADD HL,HL ; x2
+	ADD HL,HL ; x4
+	ADD HL,HL ; x8
+	ADD HL,HL ; x16
+	ADD HL,HL ; x32
+	ADD HL,HL ; x64
+
+	LD BC,gfx_des_tiles
+	ADD HL,BC
+
+	PUSH DE
+	CALL TILES_1
+	POP DE
+
+.aff_tableau1
+	INC DE      ;Case suivante (decalage de 4 octets sur la droite)
+	INC DE
+	INC DE
+	INC DE
+
+	POP AF
+	DEC A
+	JR NZ,aff_tableau2
+
+	POP HL
+	LD BC,&00A0
+	ADD HL,BC
+	EX DE,HL   ;Ligne suivante
+	POP AF
+	DEC A
+	JR NZ,aff_tableau3
+
+	RET
+
+;syntax |START,adresse_niveau_dans_le_pack
+.START_AFF
+        ;lecture valeur adresse_niveau
+	LD L,(IX+00)
+	LD H,(IX+01)
+	LD DE,niveau_courant
+	LD BC,176   ;16x11
+	LDIR        ;transfeert des données
+	
+	;affichage du niveau
+	;CALL LEVEL_AFF
+	
+	;calcul positions target et slider
+	;suppression des valeurs des sliders dans le tableau
+	LD HL,niveau_courant
+	LD C,176 ;16x11
+.LOOPCHECK
+	LD A,(HL)
+	PUSH HL
+	CP &01
+	CALL Z,TARGET1
+	CP &02
+	CALL Z,TARGET2
+	CP &03
+	CALL Z,TARGET3
+	CP &04
+	CALL Z,TARGET4
+	CP &05
+	CALL Z,SLIDER1
+	CP &06
+	CALL Z,SLIDER2
+	CP &07
+	CALL Z,SLIDER3
+	CP &08
+	CALL Z,SLIDER4
+	DEC C
+	POP HL
+	INC HL
+	JR NZ,LOOPCHECK
+	
+	;affichage du niveau
+	LD HL,niveau_courant
+	LD DE,niveau_courant
+	CALL LEVEL_AFF
+	
+	RET	
+.TARGET1
+        ;position
+        LD a,c
+	LD (resultat_target1),a
+	XOR A
+	RET
+.TARGET2
+        ;position
+        LD a,c
+	LD (resultat_target2),a
+	XOR A
+	RET
+.TARGET3
+        ;position
+        LD a,c
+	LD (resultat_target3),a
+	XOR A
+	RET
+.TARGET4
+        ;position
+        LD a,c
+	LD (resultat_target4),a
+	XOR A
+	RET
+.SLIDER1
+        ;position
+        LD a,c
+	LD (resultat_slider1),a
+        ;mise a zéro
+        XOR A
+        LD (HL),a
+	RET
+.SLIDER2
+        ;position
+        LD a,c
+	LD (resultat_slider2),a
+        ;mise a zéro
+        XOR A
+        LD (HL),a
+	RET
+.SLIDER3
+        ;position
+        LD a,c
+	LD (resultat_slider3),a
+        ;mise a zéro
+        XOR A
+        LD (HL),a
+	RET
+.SLIDER4
+        ;position
+        LD a,c
+	LD (resultat_slider4),a
+        ;mise a zéro
+        XOR A
+        LD (HL),a
+	RET
+
+;syntax |RESETDATA
+.RESET_SAV
+       LD HL,&9F53
+       LD DE,&9F54
+       LD BC,100 ;101 valeurs
+       LD (HL),0
+       LDIR
+       RET
+
+;syntax |LEVELCLEAR
+.LEVEL_CLEAR
+       LD HL,niveau_courant
+       LD DE,niveau_courant+1
+       LD BC,(16*11)-1
+       LD (HL),0
+       LDIR
+       RET
+
+;*****************************
+;*** gestion des 4 sprites ***
+;*****************************
+.fond_Tampon1 :
+	DEFS	64                   ; MODE 1 : 16px*16px = 4*16 = 64 octets 
+.fond_Tampon2 :
+	DEFS	64
+.fond_Tampon3 :
+	DEFS	64
+.fond_Tampon4 :
+	DEFS	64 
+
+.DECOR_SAV
+;syntax |DECORSAVE,slider,adresse_ecran
+        ;lecture slider
+	LD A,(IX+02)
+        ;lecture adresse_ecran
+	LD E,(IX+00)
+	LD D,(IX+01)
+
+        ;HL adresse pour sauver
+	CP &05
+	CALL Z,FOND_SLIDER1
+	CP &06
+	CALL Z,FOND_SLIDER2
+	CP &07
+	CALL Z,FOND_SLIDER3
+	CP &08
+	CALL Z,FOND_SLIDER4
+
+	LD A,Hauteur_du_tile
+	EX DE,HL	
+
+.sauver_fond1
+	LDI ; 16 pixels = 4 octets en MODE 1
+	LDI
+	LDI
+	LDI
+	LD BC,&7FC
+	ADD HL,BC
+	JR NC,sauver_fond2
+	LD BC,&C050
+	ADD HL,BC
+	
+.sauver_fond2
+	DEC A
+	JR NZ,sauver_fond1
+	RET
+
+
+.DECOR_AFF
+;syntax |DECORAFF,slider,adresse_ecran
+        ;lecture slider
+	LD A,(IX+02)
+        ;lecture adresse_ecran
+	LD E,(IX+00)
+	LD D,(IX+01)
+
+        ;HL adresse pour sauver
+	CP &05
+	CALL Z,FOND_SLIDER1
+	CP &06
+	CALL Z,FOND_SLIDER2
+	CP &07
+	CALL Z,FOND_SLIDER3
+	CP &08
+	CALL Z,FOND_SLIDER4
+	
+	LD A,Hauteur_du_tile
+	
+.restore_fond1
+	LDI ; 16 pixels = 4 octets en MODE 1
+	LDI
+	LDI
+	LDI
+	EX DE,HL
+	LD BC,&7FC
+	ADD HL,BC
+	JR NC,restore_fond2
+	LD BC,&C050
+	ADD HL,BC
+	
+.restore_fond2
+	EX DE,HL
+	DEC A
+	JR NZ,restore_fond1
+	RET	
+
+.FOND_SLIDER1
+        LD HL,fond_Tampon1
+        RET
+.FOND_SLIDER2
+        LD HL,fond_Tampon2
+        RET
+.FOND_SLIDER3
+        LD HL,fond_Tampon3
+        RET
+.FOND_SLIDER4
+        LD HL,fond_Tampon4
+        RET
+
+
+;syntax |SPRITE,slider(adresse_memoire),adresse_ecran
+.SPRITE_AFF        
+	;lecture valeur adresse_ecran
+	LD E,(IX+02)
+	LD D,(IX+03)
+        ;lecture valeur adresse_tiles/sprite
+	LD L,(IX+00)
+	LD H,(IX+01)
+
+	;EX DE,HL ; en inversant HL et DE, on peut gagner sur le calcul final de ligne suivante.
+	LD A,Hauteur_du_tile
+
+.aff_sp0
+        DI        ;desactiver les interruptions (a cause du EX AF,AF')
+	EX AF,AF'
+
+; traitement premier octet
+	LD A,(DE)
+	LD B,A
+	AND &88 ; pixel 4
+	JR NZ,aff_sp11
+	LD A,(HL)
+	AND &88
+.aff_sp11
+	LD C,A  ; on sauvegarde dans C le pixel traite
+	
+	LD A,B
+	AND &44
+	JR NZ,aff_sp12
+	LD A,(HL)
+	AND &44
+.aff_sp12
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &22
+	JR NZ,aff_sp13
+	LD A,(HL)
+	AND &22
+.aff_sp13
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &11
+	JR NZ,aff_sp14
+	LD A,(HL)
+	AND &11
+.aff_sp14
+	ADD A,C
+	LD (HL),A ; on poke en memoire video le resultat final
+
+	INC HL
+	INC DE
+
+; traitement deuxieme octet
+	LD A,(DE)
+	LD B,A
+	AND &88 ; pixel 4
+	JR NZ,aff_sp21
+	LD A,(HL)
+	AND &88
+.aff_sp21
+	LD C,A  ; on sauvegarde dans C le pixel traite
+	
+	LD A,B
+	AND &44
+	JR NZ,aff_sp22
+	LD A,(HL)
+	AND &44
+.aff_sp22
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &22
+	JR NZ,aff_sp23
+	LD A,(HL)
+	AND &22
+.aff_sp23
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &11
+	JR NZ,aff_sp24
+	LD A,(HL)
+	AND &11
+.aff_sp24
+	ADD A,C
+	LD (HL),A ; on poke en memoire video le resultat final
+
+	INC HL
+	INC DE
+
+; traitement troisieme octet
+	LD A,(DE)
+	LD B,A
+	AND &88 ; pixel 4
+	JR NZ,aff_sp31
+	LD A,(HL)
+	AND &88
+.aff_sp31
+	LD C,A  ; on sauvegarde dans C le pixel traite
+	
+	LD A,B
+	AND &44
+	JR NZ,aff_sp32
+	LD A,(HL)
+	AND &44
+.aff_sp32
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &22
+	JR NZ,aff_sp33
+	LD A,(HL)
+	AND &22
+.aff_sp33
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &11
+	JR NZ,aff_sp34
+	LD A,(HL)
+	AND &11
+.aff_sp34
+	ADD A,C
+	LD (HL),A ; on poke en memoire video le resultat final
+
+	INC HL
+	INC DE
+
+; traitement quatrieme octet
+	LD A,(DE)
+	LD B,A
+	AND &88 ; pixel 4
+	JR NZ,aff_sp41
+	LD A,(HL)
+	AND &88
+.aff_sp41
+	LD C,A  ; on sauvegarde dans C le pixel traite
+	
+	LD A,B
+	AND &44
+	JR NZ,aff_sp42
+	LD A,(HL)
+	AND &44
+.aff_sp42
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &22
+	JR NZ,aff_sp43
+	LD A,(HL)
+	AND &22
+.aff_sp43
+	ADD A,C
+	LD C,A
+
+	LD A,B
+	AND &11
+	JR NZ,aff_sp44
+	LD A,(HL)
+	AND &11
+.aff_sp44
+	ADD A,C
+	LD (HL),A ; on poke en memoire video le resultat final
+
+	INC DE
+
+	LD BC,&7FD
+	ADD HL,BC
+	JR NC,aff_sp5
+	LD BC,&C050
+	ADD HL,BC
+
+aff_sp5	EX AF,AF'
+	DEC A
+	JP NZ,aff_sp0
+	EI           ;réactiver les interruptions
+	RET
+
+;syntax |CART
+.CART_PRS
+         LD DE,&F8AD
+         LD HL,&9C21 
+         CALL TILES_1 ;coin haut gauche
+
+         LD DE,&F14D
+         LD HL,&9DA1 
+         CALL TILES_1 ;coin bas gauche
+         
+         LD DE,&F8CD
+         LD HL,&9B61 
+         CALL TILES_1 ;coin haut droit
+
+         LD DE,&F16D
+         LD HL,&9CE1 
+         CALL TILES_1 ;coin bas droit
+
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ld de,130 
+         ld hl,368
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,351
+         ld hl,294 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,2 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+
+         ;parametre par defaut pour la zone graphique
+         ;bord gauche et droit
+         ld de,0
+         ld hl,640
+         call #BBCF
+         ;bord haut et bas
+         ld de,0
+         ld hl,400
+         call #BBD2
+
+         ;refaire le trait blanc
+         ;PEN 1
+         ld a,1
+         call #BBDE
+         ;plot
+         ld de,128 ;x
+         ld hl,344 ;y
+         call #BBEA
+         ;draw
+         ld de,374
+         ld hl,344
+         call #BBF6
+
+         ;plot
+         ld de,128 ;x
+         ld hl,346 ;y
+         call #BBEA
+         ;draw
+         ld de,374
+         ld hl,346
+         call #BBF6
+
+         ;plot
+         ld de,128 ;x
+         ld hl,348 ;y
+         call #BBEA
+         ;draw
+         ld de,374
+         ld hl,348
+         call #BBF6
+
+         RET
+
+;syntax |INFO
+.CART_INFO         
+         LD DE,&F329
+         LD HL,&9BA1
+         CALL TILES_1 ;coin gauche
+
+         LD DE,&F355
+         LD HL,&9AE1 
+         CALL TILES_1 ;coin droit
+         
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ;104;225
+         ;423;198
+         ld de,104 
+         ld hl,423
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,225
+         ld hl,198 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,2 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+         
+         ;parametre par defaut pour la zone graphique
+         ;bord gauche et droit
+         ld de,0
+         ld hl,640
+         call #BBCF
+         ;bord haut et bas
+         ld de,0
+         ld hl,400
+         call #BBD2
+         
+         RET
+         
+;syntax |RECT
+.RECT_INFO
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ld de,148-16
+         ld hl,366+16
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,160
+         ld hl,238 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,0 ;NOIR 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+         
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ld de,148-8
+         ld hl,366+8
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,160+8
+         ld hl,238-8 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,3 ;BLEU 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ld de,148
+         ld hl,366
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,160+16
+         ld hl,238-16 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,1 ;BLANC 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+         
+         ;Utilisation de la zone graphique comme d'un FILL
+         ;bord gauche et droit 
+         ld de,148+8
+         ld hl,366-8
+         call #BBCF 
+         ;bord haut et bas 
+         ld de,160+24
+         ld hl,238-24 
+         call #BBD2 
+         ;couleur du paper 
+         ld a,3 ;BLEU 
+         call #BBE4 
+         ;cls fenetre graphique 
+         call #BBDB
+         
+         ;parametre par defaut pour la zone graphique
+         ;bord gauche et droit
+         ld de,0
+         ld hl,640
+         call #BBCF
+         ;bord haut et bas
+         ld de,0
+         ld hl,400
+         call #BBD2 
+         
+         RET
+
+;syntax |BLABLA
+.valbouche
+DEFB       0
+.BOUCHES
+        LD A,(valbouche)
+	CP &00
+	CALL Z,BOUCHE1
+	CP &01
+	CALL Z,BOUCHE2
+        RET
+.BOUCHE1
+        ;changer 8 valeurs
+        LD A,&0F
+        LD (&E3B8),A
+        LD (&E3B9),A
+        LD (&FBB8),A
+        LD (&FBB9),A        
+        LD A,&F0        
+        LD (&EBB8),A
+        LD (&F3B8),A
+        LD A,&E1
+        LD (&EBB9),A
+        LD (&F3B9),A
+        ;on change pour le prochain appel
+        LD A,1
+        LD (valbouche),A
+        ;en sortant de cette sous-routine on évite d'aller dans la suivante
+        LD A,7
+        RET                        
+.BOUCHE2
+        ;changer 8 valeurs
+        LD A,&F0
+        LD (&E3B8),A
+        LD (&FBB8),A
+        LD A,&E1
+        LD (&E3B9),A
+        LD (&FBB9),A
+        XOR A        
+        LD (&EBB8),A
+        LD (&F3B8),A
+        LD A,&01
+        LD (&EBB9),A
+        LD (&F3B9),A
+        ;on change pour le prochain appel
+        XOR A
+        LD (valbouche),A
+        RET 
+
+;syntax |CLS3
+;petit effet pour vider l'écran du dernier niveau
+.CLS3
+        LD HL,&C000
+        LD BC,&4000
+clsloop2:
+         LD (HL),&FF;remplir avec l'encre 3 (bleu)
+         LD DE,&0059
+         ADD HL,DE
+         JR NC,clsloop1
+         LD DE,&C000
+         ADD HL,DE
+clsloop1:
+         DEC BC
+         LD A,B
+         OR C
+         JR NZ,clsloop2
+         RET
